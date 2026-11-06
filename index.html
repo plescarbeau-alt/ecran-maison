@@ -154,6 +154,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .bin-edit { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center; margin-bottom: 8px; }
 .bin-edit .next { grid-column: 1 / -1; color: var(--muted); font-size: .8rem; margin: -2px 0 4px; }
 
+.air-steps { margin: 0 0 14px; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; }
+.air-steps b { color: var(--sky); font-weight: 600; }
+
 /* Mode nuit */
 .night { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 2s; z-index: 10; }
 body.is-night .night { opacity: .72; }
@@ -241,6 +244,21 @@ body.is-night .night { opacity: .72; }
 <div class="flash" id="flash" hidden>
   <h2>Temps écoulé</h2>
   <button type="button" id="flashOk">OK</button>
+</div>
+
+<div class="sheet" id="airHelp" hidden>
+  <div class="card">
+    <h2>Jouer sur les haut-parleurs</h2>
+    <p class="hint">Pour choisir le Salon, le Bureau ou les deux à la fois :</p>
+    <ol class="air-steps">
+      <li>Glissez le doigt vers le bas depuis le <b>coin en haut à droite</b> de l'écran pour ouvrir le Centre de contrôle.</li>
+      <li>Sur la tuile de lecture (en haut à droite), touchez l'icône <b>AirPlay</b> : un triangle entouré d'ondes.</li>
+      <li>Cochez <b>Salon.</b> et <b>Enceinte bureau</b>, puis décochez « iPad ».</li>
+      <li>Glissez vers le haut pour revenir à l'écran. Le volume de chaque enceinte se règle au même endroit.</li>
+    </ol>
+    <div class="row"><button type="button" id="airTry">Essayer le sélecteur rapide</button></div>
+    <button type="button" class="close" id="airClose">Compris</button>
+  </div>
 </div>
 
 <div class="sheet" id="sheet" hidden>
@@ -575,7 +593,7 @@ body.is-night .night { opacity: .72; }
     current = i; drawStations();
     var btn = $("stations").children[i]; if (btn) btn.classList.add("wait");
     $("radioStatus").textContent = "Connexion à " + stations[i].name + "…";
-    $("radioStop").hidden = false;
+    $("radioStop").hidden = false; $("radioAirplay").hidden = false;
     player.src = stations[i].url;
     var p = player.play();
     if (p && p.catch) p.catch(function () { $("radioStatus").textContent = stations[i].name + " ne répond pas. Essayez une autre station."; current = -1; drawStations(); });
@@ -583,7 +601,7 @@ body.is-night .night { opacity: .72; }
   function stopRadio() {
     player.pause(); player.removeAttribute("src"); player.load();
     current = -1; drawStations();
-    $("radioStatus").textContent = "Touchez une station pour l'écouter."; $("radioStop").hidden = true;
+    $("radioStatus").textContent = "Touchez une station pour l'écouter."; $("radioStop").hidden = true; $("radioAirplay").hidden = true;
   }
   player.addEventListener("playing", function () {
     if (current < 0) return;
@@ -600,16 +618,20 @@ body.is-night .night { opacity: .72; }
   // AirPlay : envoyer la radio vers les enceintes Sonos (Salon, Bureau…)
   var onSpeakers = false;
   if (window.WebKitPlaybackTargetAvailabilityEvent) {
-    player.addEventListener("webkitplaybacktargetavailabilitychanged", function (e) {
-      $("radioAirplay").hidden = e.availability !== "available";
-    });
     player.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", function () {
       onSpeakers = !!player.webkitCurrentPlaybackTargetIsWireless;
-      $("radioAirplay").textContent = onSpeakers ? "Sur AirPlay ✓" : "Haut-parleurs";
+      $("radioAirplay").textContent = onSpeakers ? "Haut-parleurs ✓" : "Haut-parleurs";
       if (current >= 0) $("radioStatus").textContent = "En écoute : " + stations[current].name + (onSpeakers ? " · sur les haut-parleurs" : "");
     });
-    $("radioAirplay").addEventListener("click", function () { player.webkitShowPlaybackTargetPicker(); });
+  } else {
+    $("airTry").hidden = true;
   }
+  $("radioAirplay").addEventListener("click", function () { $("airHelp").hidden = false; });
+  $("airClose").addEventListener("click", function () { $("airHelp").hidden = true; });
+  $("airTry").addEventListener("click", function () {
+    $("airHelp").hidden = true;
+    try { player.webkitShowPlaybackTargetPicker(); } catch (e) { $("airHelp").hidden = false; }
+  });
 
   function drawRadioEdit() {
     var ul = $("radioEdit"); ul.innerHTML = "";
