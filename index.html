@@ -233,7 +233,6 @@ body.is-night .night { opacity: .72; }
       <div class="radio-bar">
         <span id="radioStatus">Touchez une station pour l'écouter.</span>
         <button type="button" id="radioAirplay" hidden aria-label="Choisir les haut-parleurs AirPlay">Haut-parleurs</button>
-        <button type="button" id="radioHelp" class="help" hidden aria-label="Aide pour les haut-parleurs">?</button>
         <button type="button" id="radioStop" hidden>Arrêter</button>
       </div>
       <audio id="player" preload="none" x-webkit-airplay="allow"></audio>
@@ -251,7 +250,7 @@ body.is-night .night { opacity: .72; }
 <div class="sheet" id="airHelp" hidden>
   <div class="card">
     <h2>Jouer sur les haut-parleurs</h2>
-    <p class="hint">Si le bouton « Haut-parleurs » n'ouvre rien, passez par le Centre de contrôle :</p>
+    <p class="hint">L'iPad garde en général ce choix quand vous changez de station. Refaites-le si le son revient sur l'iPad.</p>
     <ol class="air-steps">
       <li>Glissez le doigt vers le bas depuis le <b>coin en haut à droite</b> de l'écran pour ouvrir le Centre de contrôle.</li>
       <li>Sur la tuile de lecture (en haut à droite), touchez l'icône <b>AirPlay</b> : un triangle entouré d'ondes.</li>
@@ -603,7 +602,7 @@ body.is-night .night { opacity: .72; }
     current = i; drawStations();
     var btn = $("stations").children[i]; if (btn) btn.classList.add("wait");
     $("radioStatus").textContent = "Connexion à " + stations[i].name + "…";
-    $("radioStop").hidden = false; $("radioAirplay").hidden = false; $("radioHelp").hidden = false;
+    $("radioStop").hidden = false; $("radioAirplay").hidden = false;
     player.src = stations[i].url;
     var p = player.play();
     if (p && p.catch) p.catch(function () { if (current !== i) return; $("radioStatus").textContent = stations[i].name + " ne répond pas. Essayez une autre station."; current = -1; drawStations(); });
@@ -612,7 +611,7 @@ body.is-night .night { opacity: .72; }
     player.pause();
     current = -1; drawStations();
     $("radioStatus").textContent = "Touchez une station pour l'écouter.";
-    $("radioStop").hidden = true; $("radioAirplay").hidden = true; $("radioHelp").hidden = true;
+    $("radioStop").hidden = true; $("radioAirplay").hidden = true;
   }
   $("radioStop").addEventListener("click", stopRadio);
 
@@ -628,11 +627,7 @@ body.is-night .night { opacity: .72; }
       showStatus();
     });
   }
-  $("radioAirplay").addEventListener("click", function () {
-    if (!canPick || current < 0) { $("airHelp").hidden = false; return; }
-    try { player.webkitShowPlaybackTargetPicker(); } catch (e) { $("airHelp").hidden = false; }
-  });
-  $("radioHelp").addEventListener("click", function () { $("airHelp").hidden = false; });
+  $("radioAirplay").addEventListener("click", function () { $("airHelp").hidden = false; });
   $("airClose").addEventListener("click", function () { $("airHelp").hidden = true; });
 
   function drawRadioEdit() {
