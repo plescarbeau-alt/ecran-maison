@@ -195,7 +195,7 @@ body.is-night .night { opacity: .72; }
 
   <aside class="side">
     <div class="card">
-      <p class="label"><span id="city">Montréal</span><span id="wxUpdated"></span></p>
+      <p class="label"><span id="city">Sainte-Marguerite-du-Lac-Masson</span><span id="wxUpdated"></span></p>
       <div class="wx-now">
         <div class="wx-icon" id="wxIcon">·</div>
         <div>
@@ -305,7 +305,7 @@ body.is-night .night { opacity: .72; }
   function load(key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
   function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
 
-  var settings = load("ecran.settings", { city: "Montréal", lat: 45.5017, lon: -73.5673, night: true });
+  var settings = load("ecran.settings", { city: "Sainte-Marguerite-du-Lac-Masson", lat: 46.03338, lon: -74.0659, night: true });
 
   var JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
   var MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
@@ -569,14 +569,13 @@ body.is-night .night { opacity: .72; }
   // ---------- Radio ----------
   var STW = "https://playerservices.streamtheworld.com/api/livestream-redirect/";
   var stations = load("ecran.stations", null) || [
-    { name: "ICI Musique", url: STW + "CBFXFM_SRC.mp3" },
-    { name: "ICI Première", url: STW + "CBFFM_SRC.mp3" },
-    { name: "ICI Classique", url: STW + "ICI_MusiqueClassique_SRC.mp3" },
     { name: "98.5", url: STW + "CHMPFMAAC.aac" },
-    { name: "CKOI 96.9", url: STW + "CKOIFMAAC_SC.aac" },
     { name: "Rouge 107.3", url: STW + "CITEFMAAC.aac" },
     { name: "Rythme 105.7", url: STW + "CFGLFMAAC.aac" },
-    { name: "Énergie 94.3", url: STW + "CKMFFMAAC.aac" }
+    { name: "Énergie 94.3", url: STW + "CKMFFMAAC.aac" },
+    { name: "ICI Musique", url: STW + "CBFXFM_SRC.mp3" },
+    { name: "ICI Première", url: STW + "CBFFM_SRC.mp3" },
+    { name: "CKOI 96.9", url: STW + "CKOIFMAAC_SC.aac" }
   ];
   var player = $("player"), current = -1;
   function saveStations() { save("ecran.stations", stations); drawStations(); drawRadioEdit(); }
