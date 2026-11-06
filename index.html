@@ -115,6 +115,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .radio-bar { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .radio-bar span { flex: 1; min-width: 0; color: var(--muted); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .radio-bar button { border-radius: 12px; border: 1px solid var(--line); background: transparent; padding: 8px 16px; font-weight: 600; }
+.radio-bar button.help { padding: 8px 12px; }
 .radio-edit li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .radio-edit { list-style: none; margin: 0 0 10px; padding: 0; }
 .radio-edit li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
@@ -232,6 +233,7 @@ body.is-night .night { opacity: .72; }
       <div class="radio-bar">
         <span id="radioStatus">Touchez une station pour l'écouter.</span>
         <button type="button" id="radioAirplay" hidden aria-label="Choisir les haut-parleurs AirPlay">Haut-parleurs</button>
+        <button type="button" id="radioHelp" class="help" hidden aria-label="Aide pour les haut-parleurs">?</button>
         <button type="button" id="radioStop" hidden>Arrêter</button>
       </div>
       <audio id="player" preload="none" x-webkit-airplay="allow"></audio>
@@ -249,14 +251,13 @@ body.is-night .night { opacity: .72; }
 <div class="sheet" id="airHelp" hidden>
   <div class="card">
     <h2>Jouer sur les haut-parleurs</h2>
-    <p class="hint">Pour choisir le Salon, le Bureau ou les deux à la fois :</p>
+    <p class="hint">Si le bouton « Haut-parleurs » n'ouvre rien, passez par le Centre de contrôle :</p>
     <ol class="air-steps">
       <li>Glissez le doigt vers le bas depuis le <b>coin en haut à droite</b> de l'écran pour ouvrir le Centre de contrôle.</li>
       <li>Sur la tuile de lecture (en haut à droite), touchez l'icône <b>AirPlay</b> : un triangle entouré d'ondes.</li>
       <li>Cochez <b>Salon.</b> et <b>Enceinte bureau</b>, puis décochez « iPad ».</li>
       <li>Glissez vers le haut pour revenir à l'écran. Le volume de chaque enceinte se règle au même endroit.</li>
     </ol>
-    <div class="row"><button type="button" id="airTry">Essayer le sélecteur rapide</button></div>
     <button type="button" class="close" id="airClose">Compris</button>
   </div>
 </div>
@@ -588,49 +589,61 @@ body.is-night .night { opacity: .72; }
       box.appendChild(b);
     });
   }
+  // Un lecteur neuf à chaque station : iOS n'ouvre le sélecteur AirPlay qu'une fois par lecteur
+  function newPlayer() {
+    var old = player;
+    var a = document.createElement("audio");
+    a.preload = "none"; a.setAttribute("x-webkit-airplay", "allow");
+    a.addEventListener("playing", function () {
+      if (a !== player || current < 0) return;
+      drawStations(); showStatus();
+    });
+    a.addEventListener("waiting", function () { if (a === player && current >= 0) $("radioStatus").textContent = "Mise en mémoire…"; });
+    a.addEventListener("error", function () {
+      if (a !== player || current < 0) return;
+      $("radioStatus").textContent = stations[current].name + " ne répond pas. Essayez une autre station.";
+      current = -1; drawStations();
+    });
+    a.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", function () {
+      if (a !== player) return;
+      onSpeakers = !!a.webkitCurrentPlaybackTargetIsWireless;
+      $("radioAirplay").textContent = onSpeakers ? "Haut-parleurs ✓" : "Haut-parleurs";
+      showStatus();
+    });
+    old.parentNode.replaceChild(a, old);
+    try { old.pause(); old.removeAttribute("src"); old.load(); } catch (e) {}
+    player = a;
+  }
+  function showStatus() {
+    if (current >= 0) $("radioStatus").textContent = "En écoute : " + stations[current].name + (onSpeakers ? " · sur les haut-parleurs" : "");
+  }
   function playStation(i) {
     current = i; drawStations();
     var btn = $("stations").children[i]; if (btn) btn.classList.add("wait");
     $("radioStatus").textContent = "Connexion à " + stations[i].name + "…";
-    $("radioStop").hidden = false; $("radioAirplay").hidden = false;
+    $("radioStop").hidden = false; $("radioAirplay").hidden = false; $("radioHelp").hidden = false;
+    newPlayer();
     player.src = stations[i].url;
-    var p = player.play();
-    if (p && p.catch) p.catch(function () { $("radioStatus").textContent = stations[i].name + " ne répond pas. Essayez une autre station."; current = -1; drawStations(); });
+    var a = player, p = a.play();
+    if (p && p.catch) p.catch(function () { if (a !== player) return; $("radioStatus").textContent = stations[i].name + " ne répond pas. Essayez une autre station."; current = -1; drawStations(); });
   }
   function stopRadio() {
     player.pause(); player.removeAttribute("src"); player.load();
     current = -1; drawStations();
-    $("radioStatus").textContent = "Touchez une station pour l'écouter."; $("radioStop").hidden = true; $("radioAirplay").hidden = true;
+    $("radioStatus").textContent = "Touchez une station pour l'écouter.";
+    $("radioStop").hidden = true; $("radioAirplay").hidden = true; $("radioHelp").hidden = true;
   }
-  player.addEventListener("playing", function () {
-    if (current < 0) return;
-    drawStations(); $("radioStatus").textContent = "En écoute : " + stations[current].name + (onSpeakers ? " · sur les haut-parleurs" : "");
-  });
-  player.addEventListener("waiting", function () { if (current >= 0) $("radioStatus").textContent = "Mise en mémoire…"; });
-  player.addEventListener("error", function () {
-    if (current < 0) return;
-    $("radioStatus").textContent = stations[current].name + " ne répond pas. Essayez une autre station.";
-    current = -1; drawStations();
-  });
   $("radioStop").addEventListener("click", stopRadio);
 
   // AirPlay : envoyer la radio vers les enceintes Sonos (Salon, Bureau…)
   var onSpeakers = false;
-  if (window.WebKitPlaybackTargetAvailabilityEvent) {
-    player.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", function () {
-      onSpeakers = !!player.webkitCurrentPlaybackTargetIsWireless;
-      $("radioAirplay").textContent = onSpeakers ? "Haut-parleurs ✓" : "Haut-parleurs";
-      if (current >= 0) $("radioStatus").textContent = "En écoute : " + stations[current].name + (onSpeakers ? " · sur les haut-parleurs" : "");
-    });
-  } else {
-    $("airTry").hidden = true;
-  }
-  $("radioAirplay").addEventListener("click", function () { $("airHelp").hidden = false; });
-  $("airClose").addEventListener("click", function () { $("airHelp").hidden = true; });
-  $("airTry").addEventListener("click", function () {
-    $("airHelp").hidden = true;
+  var canPick = !!window.WebKitPlaybackTargetAvailabilityEvent;
+  $("radioAirplay").addEventListener("click", function () {
+    if (!canPick || current < 0) { $("airHelp").hidden = false; return; }
     try { player.webkitShowPlaybackTargetPicker(); } catch (e) { $("airHelp").hidden = false; }
   });
+  $("radioHelp").addEventListener("click", function () { $("airHelp").hidden = false; });
+  $("airClose").addEventListener("click", function () { $("airHelp").hidden = true; });
 
   function drawRadioEdit() {
     var ul = $("radioEdit"); ul.innerHTML = "";
