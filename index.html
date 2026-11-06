@@ -589,31 +589,13 @@ body.is-night .night { opacity: .72; }
       box.appendChild(b);
     });
   }
-  // Un lecteur neuf à chaque station : iOS n'ouvre le sélecteur AirPlay qu'une fois par lecteur
-  function newPlayer() {
-    var old = player;
-    var a = document.createElement("audio");
-    a.preload = "none"; a.setAttribute("x-webkit-airplay", "allow");
-    a.addEventListener("playing", function () {
-      if (a !== player || current < 0) return;
-      drawStations(); showStatus();
-    });
-    a.addEventListener("waiting", function () { if (a === player && current >= 0) $("radioStatus").textContent = "Mise en mémoire…"; });
-    a.addEventListener("error", function () {
-      if (a !== player || current < 0) return;
-      $("radioStatus").textContent = stations[current].name + " ne répond pas. Essayez une autre station.";
-      current = -1; drawStations();
-    });
-    a.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", function () {
-      if (a !== player) return;
-      onSpeakers = !!a.webkitCurrentPlaybackTargetIsWireless;
-      $("radioAirplay").textContent = onSpeakers ? "Haut-parleurs ✓" : "Haut-parleurs";
-      showStatus();
-    });
-    old.parentNode.replaceChild(a, old);
-    try { old.pause(); old.removeAttribute("src"); old.load(); } catch (e) {}
-    player = a;
-  }
+  player.addEventListener("playing", function () { if (current >= 0) { drawStations(); showStatus(); } });
+  player.addEventListener("waiting", function () { if (current >= 0) $("radioStatus").textContent = "Mise en mémoire…"; });
+  player.addEventListener("error", function () {
+    if (current < 0 || !player.getAttribute("src")) return;
+    $("radioStatus").textContent = stations[current].name + " ne répond pas. Essayez une autre station.";
+    current = -1; drawStations();
+  });
   function showStatus() {
     if (current >= 0) $("radioStatus").textContent = "En écoute : " + stations[current].name + (onSpeakers ? " · sur les haut-parleurs" : "");
   }
@@ -622,13 +604,12 @@ body.is-night .night { opacity: .72; }
     var btn = $("stations").children[i]; if (btn) btn.classList.add("wait");
     $("radioStatus").textContent = "Connexion à " + stations[i].name + "…";
     $("radioStop").hidden = false; $("radioAirplay").hidden = false; $("radioHelp").hidden = false;
-    newPlayer();
     player.src = stations[i].url;
-    var a = player, p = a.play();
-    if (p && p.catch) p.catch(function () { if (a !== player) return; $("radioStatus").textContent = stations[i].name + " ne répond pas. Essayez une autre station."; current = -1; drawStations(); });
+    var p = player.play();
+    if (p && p.catch) p.catch(function () { if (current !== i) return; $("radioStatus").textContent = stations[i].name + " ne répond pas. Essayez une autre station."; current = -1; drawStations(); });
   }
   function stopRadio() {
-    player.pause(); player.removeAttribute("src"); player.load();
+    player.pause();
     current = -1; drawStations();
     $("radioStatus").textContent = "Touchez une station pour l'écouter.";
     $("radioStop").hidden = true; $("radioAirplay").hidden = true; $("radioHelp").hidden = true;
@@ -638,6 +619,15 @@ body.is-night .night { opacity: .72; }
   // AirPlay : envoyer la radio vers les enceintes Sonos (Salon, Bureau…)
   var onSpeakers = false;
   var canPick = !!window.WebKitPlaybackTargetAvailabilityEvent;
+  if (canPick) {
+    // iOS n'affiche la liste des enceintes que si la page écoute cet événement
+    player.addEventListener("webkitplaybacktargetavailabilitychanged", function () {});
+    player.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", function () {
+      onSpeakers = !!player.webkitCurrentPlaybackTargetIsWireless;
+      $("radioAirplay").textContent = onSpeakers ? "Haut-parleurs ✓" : "Haut-parleurs";
+      showStatus();
+    });
+  }
   $("radioAirplay").addEventListener("click", function () {
     if (!canPick || current < 0) { $("airHelp").hidden = false; return; }
     try { player.webkitShowPlaybackTargetPicker(); } catch (e) { $("airHelp").hidden = false; }
