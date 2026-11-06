@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maison">
+<meta name="theme-color" content="#0e1620">
+<title>Écran de la maison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Mise en page : écran fixe paysage de l'iPad Air 2 — horloge et collectes à gauche, météo/air et minuteur à droite. */
+:root {
+  --bg: #0e1620;
+  --panel: #152130;
+  --line: #22344a;
+  --fg: #e9eef3;
+  --muted: #8a9db2;
+  --sky: #8cc8ff;
+  --sun: #f4b860;
+  --good: #7fd1a7;
+  --warn: #f4d35e;
+  --bad: #ff8a5c;
+  --worse: #ff5f6d;
+  --display: "Bricolage Grotesque", "Avenir Next", "Helvetica Neue", sans-serif;
+  --body: "Figtree", "Avenir Next", "Helvetica Neue", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.4 var(--body);
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 20px;
+  padding-top: max(20px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+
+/* Horloge */
+.clock { display: flex; flex-direction: column; justify-content: space-between; gap: 16px; padding: 8px 8px 4px; min-width: 0; }
+.greet { font-size: 1.15rem; color: var(--muted); letter-spacing: .02em; }
+.time {
+  font-family: var(--display); font-weight: 300;
+  font-size: clamp(6rem, 17vw, 13rem); line-height: .9; letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums; margin: 0;
+}
+.time .sec { font-size: .28em; color: var(--muted); letter-spacing: 0; margin-left: .15em; vertical-align: .15em; }
+.date { font-family: var(--display); font-weight: 500; font-size: clamp(1.4rem, 3vw, 2.2rem); margin-top: 10px; }
+.date::first-letter { text-transform: uppercase; }
+.week { color: var(--muted); font-size: .95rem; margin-top: 4px; }
+.daybar { margin-top: 22px; }
+.daybar-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.daybar-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--sky), var(--sun)); }
+.daybar-legend { display: flex; justify-content: space-between; color: var(--muted); font-size: .8rem; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.foot { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: .85rem; }
+.foot button { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; color: var(--muted); }
+
+.side { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; min-width: 0; }
+.label { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 8px; display: flex; justify-content: space-between; gap: 8px; }
+.label button { background: none; border: 0; color: var(--sky); font-size: inherit; letter-spacing: inherit; text-transform: inherit; padding: 0; }
+
+/* Météo + air */
+.wx-now { display: flex; align-items: center; gap: 14px; }
+.wx-icon { font-size: 3rem; line-height: 1; }
+.wx-temp { font-family: var(--display); font-size: 3.2rem; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+.wx-desc { color: var(--muted); font-size: .95rem; }
+.air { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px 5px 6px; font-size: .9rem; }
+.pill i { font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 30px; height: 24px; padding: 0 6px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; color: #0e1620; background: var(--muted); }
+.pill small { color: var(--muted); font-size: .8rem; }
+.wx-days { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.wx-day { text-align: center; font-size: .85rem; }
+.wx-day b { display: block; font-weight: 600; text-transform: capitalize; }
+.wx-day .ic { font-size: 1.5rem; display: block; margin: 2px 0; }
+.wx-day .lo { color: var(--muted); }
+
+/* Minuteur */
+.side > .card { padding: 14px 16px; }
+.wx-days { margin-top: 10px !important; padding-top: 10px !important; }
+.timer-display { font-family: var(--display); font-size: 2.6rem; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1; text-align: center; margin: 0 0 10px; }
+.presets button, .controls button { padding: 8px 0 !important; }
+.timer-display.run { color: var(--sun); }
+.presets, .controls { display: flex; gap: 8px; }
+.presets button, .controls button { flex: 1; padding: 10px 0; border-radius: 12px; border: 1px solid var(--line); background: transparent; font-weight: 600; }
+.presets button.on { border-color: var(--sun); color: var(--sun); }
+.controls { margin-top: 8px; }
+.controls .primary { background: var(--sun); color: #1b1408; border-color: var(--sun); }
+
+/* Radio */
+.radio { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.stations { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; overflow-y: auto; min-height: 0; -webkit-overflow-scrolling: touch; }
+.station { padding: 9px 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-weight: 600; font-size: .85rem; line-height: 1.15; min-width: 0; overflow-wrap: anywhere; }
+.station.on { border-color: var(--sky); color: var(--sky); background: #13263a; }
+.station.on::before { content: "▶ "; }
+.station.wait { opacity: .6; }
+.radio-bar { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.radio-bar span { flex: 1; min-width: 0; color: var(--muted); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.radio-bar button { border-radius: 12px; border: 1px solid var(--line); background: transparent; padding: 8px 16px; font-weight: 600; }
+.radio-edit li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.radio-edit { list-style: none; margin: 0 0 10px; padding: 0; }
+.radio-edit li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* Collectes */
+.bins { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.bin { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); min-width: 0; }
+.bin .name { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.bin .name span { min-width: 0; overflow-wrap: anywhere; }
+.bin .sw { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+.bin .when { font-family: var(--display); font-size: 1.25rem; font-weight: 500; }
+.bin .when::first-letter { text-transform: uppercase; }
+.bin .sub { color: var(--muted); font-size: .82rem; }
+.bin.soon { border-color: var(--sun); background: #241f15; }
+.bin.soon .sub { color: var(--sun); }
+.example { color: var(--muted); font-size: .8rem; margin: 8px 0 0; }
+
+/* Alarme du minuteur */
+.flash { position: fixed; inset: 0; background: var(--sun); color: #1b1408; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; z-index: 30; animation: pulse 1s ease-in-out infinite alternate; }
+.flash h2 { font-family: var(--display); font-size: 4rem; margin: 0; }
+.flash button { font-size: 1.3rem; padding: 14px 40px; border-radius: 999px; border: 0; background: #1b1408; color: var(--sun); font-weight: 700; }
+@keyframes pulse { from { opacity: 1; } to { opacity: .82; } }
+
+/* Réglages */
+.sheet { position: fixed; inset: 0; background: rgba(5,10,16,.7); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 20px; }
+.sheet > .card { width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.sheet h2 { font-family: var(--display); margin: 0 0 12px; font-weight: 500; }
+.sheet .row { display: flex; gap: 8px; margin-bottom: 12px; }
+.sheet input[type=text], .sheet select { min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; }
+.sheet input[type=text] { flex: 1; -webkit-user-select: text; user-select: text; }
+.sheet button { border-radius: 12px; border: 1px solid var(--line); background: transparent; padding: 9px 14px; }
+.results button { display: block; width: 100%; text-align: left; margin-bottom: 6px; }
+.sheet .hint { color: var(--muted); font-size: .85rem; margin: 0 0 10px; }
+.sheet .close { margin-top: 10px; width: 100%; background: var(--sky); color: #0b1a2a; border: 0; font-weight: 600; }
+.sheet section { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
+.toggle { display: flex; align-items: center; gap: 10px; margin: 6px 0 4px; }
+.bin-edit { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center; margin-bottom: 8px; }
+.bin-edit .next { grid-column: 1 / -1; color: var(--muted); font-size: .8rem; margin: -2px 0 4px; }
+
+/* Mode nuit */
+.night { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 2s; z-index: 10; }
+body.is-night .night { opacity: .72; }
+
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  .app { grid-template-columns: 1fr; height: auto; }
+  .time { font-size: 7rem; }
+  .bin-edit { grid-template-columns: 1fr 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; } .night { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="clock">
+    <div>
+      <div class="greet" id="greet">Bonjour</div>
+      <h1 class="time" id="time">--:--</h1>
+      <div class="date" id="date"></div>
+      <div class="week" id="week"></div>
+      <div class="daybar">
+        <div class="daybar-track"><div class="daybar-fill" id="dayfill"></div></div>
+        <div class="daybar-legend"><span id="sunrise">Lever —</span><span id="daylen"></span><span id="sunset">Coucher —</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <p class="label"><span>Collectes</span><button type="button" id="editBins">Modifier</button></p>
+      <div class="bins" id="bins"></div>
+      <p class="example" id="binsExample" hidden>Horaire d'exemple. Touchez « Modifier » pour entrer celui de votre rue.</p>
+    </div>
+    <div class="foot">
+      <button id="openSettings" type="button">Réglages</button>
+    </div>
+  </section>
+
+  <aside class="side">
+    <div class="card">
+      <p class="label"><span id="city">Montréal</span><span id="wxUpdated"></span></p>
+      <div class="wx-now">
+        <div class="wx-icon" id="wxIcon">·</div>
+        <div>
+          <div class="wx-temp" id="wxTemp">--°</div>
+          <div class="wx-desc" id="wxDesc">Chargement de la météo…</div>
+        </div>
+      </div>
+      <div class="air">
+        <span class="pill"><i id="aqiVal">–</i><span>Air <small id="aqiTxt">chargement…</small></span></span>
+        <span class="pill"><i id="uvVal">–</i><span>UV <small id="uvTxt">aujourd'hui</small></span></span>
+      </div>
+      <div class="wx-days" id="wxDays"></div>
+    </div>
+
+    <div class="card">
+      <p class="label"><span>Minuteur</span><span id="timerLabel">25 min</span></p>
+      <div class="timer-display" id="timerDisplay">25:00</div>
+      <div class="presets" id="presets">
+        <button type="button" data-min="5">5</button>
+        <button type="button" data-min="10">10</button>
+        <button type="button" data-min="15">15</button>
+        <button type="button" data-min="25" class="on">25</button>
+        <button type="button" data-min="50">50</button>
+      </div>
+      <div class="controls">
+        <button type="button" class="primary" id="timerStart">Démarrer</button>
+        <button type="button" id="timerReset">Remettre</button>
+      </div>
+    </div>
+
+    <div class="card radio">
+      <p class="label"><span>Radio</span><button type="button" id="editRadio">Modifier</button></p>
+      <div class="stations" id="stations"></div>
+      <div class="radio-bar">
+        <span id="radioStatus">Touchez une station pour l'écouter.</span>
+        <button type="button" id="radioAirplay" hidden aria-label="Choisir les haut-parleurs AirPlay">Haut-parleurs</button>
+        <button type="button" id="radioStop" hidden>Arrêter</button>
+      </div>
+      <audio id="player" preload="none" x-webkit-airplay="allow"></audio>
+    </div>
+  </aside>
+</div>
+
+<div class="night"></div>
+
+<div class="flash" id="flash" hidden>
+  <h2>Temps écoulé</h2>
+  <button type="button" id="flashOk">OK</button>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="card">
+    <h2>Réglages</h2>
+
+    <p class="label" id="binsTitle"><span>Horaire des collectes</span></p>
+    <p class="hint">Choisissez le jour de passage. « Aux 2 semaines », « Aux 4 semaines » et « 1 fois par mois » : entrez une date de collecte connue, la suite se calcule toute seule.</p>
+    <div id="binEdit"></div>
+    <div class="row"><button type="button" id="addBin">Ajouter un type de collecte</button></div>
+
+    <section id="radioSection">
+      <p class="label"><span>Stations de radio</span></p>
+      <ul class="radio-edit" id="radioEdit"></ul>
+      <form class="row" id="radioSearch">
+        <input id="radioInput" type="text" placeholder="Chercher une station, ex. : Rock Détente" autocomplete="off">
+        <button type="submit">Chercher</button>
+      </form>
+      <div class="results" id="radioResults"></div>
+    </section>
+
+    <section>
+      <p class="label"><span>Ville pour la météo</span></p>
+      <form class="row" id="citySearch">
+        <input id="cityInput" type="text" placeholder="Ex. : Québec, Sherbrooke…" autocomplete="off">
+        <button type="submit">Chercher</button>
+      </form>
+      <div class="results" id="cityResults"></div>
+    </section>
+
+    <section>
+      <label class="toggle"><input type="checkbox" id="nightToggle" checked> Assombrir l'écran de 22 h à 6 h 30</label>
+      <p class="hint">Touchez l'écran la nuit pour le rallumer une minute.</p>
+    </section>
+
+    <button type="button" class="close" id="closeSettings">Fermer</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  function load(key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
+  function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+
+  var settings = load("ecran.settings", { city: "Montréal", lat: 45.5017, lon: -73.5673, night: true });
+
+  var JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+  var MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function isoWeek(d) {
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    var y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil(((t - y0) / 86400000 + 1) / 7);
+  }
+
+  // ---------- Horloge ----------
+  var sun = null, wakeUntil = 0, lastDay = -1;
+  function tick() {
+    var d = new Date(), h = d.getHours();
+    $("time").innerHTML = pad(h) + ":" + pad(d.getMinutes()) + '<span class="sec">' + pad(d.getSeconds()) + "</span>";
+    $("date").textContent = JOURS[d.getDay()] + " " + d.getDate() + " " + MOIS[d.getMonth()];
+    var dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 86400000) + 1;
+    $("week").textContent = "Semaine " + isoWeek(d) + " · jour " + dayOfYear + " de l'année";
+    $("greet").textContent = h < 5 ? "Bonne nuit" : h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
+    if (sun) $("dayfill").style.width = (Math.max(0, Math.min(1, (d - sun.rise) / (sun.set - sun.rise))) * 100).toFixed(1) + "%";
+    var mins = h * 60 + d.getMinutes();
+    document.body.classList.toggle("is-night", settings.night && (mins >= 22 * 60 || mins < 6 * 60 + 30) && Date.now() > wakeUntil);
+    if (d.getDate() !== lastDay || (d.getMinutes() === 0 && d.getSeconds() === 0)) { lastDay = d.getDate(); drawBins(); }
+    // Rechargement quotidien à 3 h, seulement si le Mac répond (sinon la page actuelle continue de tourner)
+    if (h === 3 && d.getMinutes() === 0 && d.getSeconds() === 0) {
+      fetch(location.href, { cache: "no-store" }).then(function (r) { if (r.ok) location.reload(); }).catch(function () {});
+    }
+  }
+  document.addEventListener("touchstart", function () { wakeUntil = Date.now() + 60000; tick(); }, { passive: true });
+  document.addEventListener("click", function () { wakeUntil = Date.now() + 60000; });
+
+  // ---------- Météo, qualité de l'air, UV (Open-Meteo, sans clé) ----------
+  var WMO = {
+    0: ["☀️", "Ciel dégagé"], 1: ["🌤️", "Plutôt dégagé"], 2: ["⛅", "Partiellement nuageux"], 3: ["☁️", "Couvert"],
+    45: ["🌫️", "Brouillard"], 48: ["🌫️", "Brouillard givrant"],
+    51: ["🌦️", "Bruine légère"], 53: ["🌦️", "Bruine"], 55: ["🌧️", "Bruine forte"], 56: ["🌧️", "Bruine verglaçante"], 57: ["🌧️", "Bruine verglaçante"],
+    61: ["🌧️", "Pluie légère"], 63: ["🌧️", "Pluie"], 65: ["🌧️", "Forte pluie"], 66: ["🧊", "Pluie verglaçante"], 67: ["🧊", "Pluie verglaçante"],
+    71: ["🌨️", "Neige légère"], 73: ["🌨️", "Neige"], 75: ["❄️", "Forte neige"], 77: ["🌨️", "Grains de neige"],
+    80: ["🌦️", "Averses"], 81: ["🌧️", "Averses"], 82: ["⛈️", "Fortes averses"], 85: ["🌨️", "Averses de neige"], 86: ["❄️", "Fortes averses de neige"],
+    95: ["⛈️", "Orages"], 96: ["⛈️", "Orages et grêle"], 99: ["⛈️", "Orages et grêle"]
+  };
+  function wmo(c) { return WMO[c] || ["·", "—"]; }
+  function hm(d) { return pad(d.getHours()) + " h " + pad(d.getMinutes()); }
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v); }
+  function aqiLevel(v) {
+    if (v <= 50) return ["Bon", "--good"];
+    if (v <= 100) return ["Acceptable", "--warn"];
+    if (v <= 150) return ["Mauvais pour les personnes sensibles", "--bad"];
+    if (v <= 200) return ["Mauvais", "--worse"];
+    return ["Très mauvais", "--worse"];
+  }
+  function uvLevel(v) {
+    if (v < 3) return ["Faible", "--good"];
+    if (v < 6) return ["Modéré", "--warn"];
+    if (v < 8) return ["Élevé", "--bad"];
+    return ["Très élevé : protégez-vous", "--worse"];
+  }
+
+  function loadWeather() {
+    $("city").textContent = settings.city;
+    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + settings.lat + "&longitude=" + settings.lon +
+      "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max" +
+      "&timezone=auto&forecast_days=5";
+    fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
+      var c = j.current, w = wmo(c.weather_code);
+      $("wxIcon").textContent = w[0];
+      $("wxTemp").textContent = Math.round(c.temperature_2m) + "°";
+      $("wxDesc").textContent = w[1] + " · ressenti " + Math.round(c.apparent_temperature) + "° · vent " + Math.round(c.wind_speed_10m) + " km/h";
+      var html = "";
+      for (var i = 1; i < 5; i++) {
+        var dd = new Date(j.daily.time[i] + "T12:00"), dw = wmo(j.daily.weather_code[i]);
+        var pp = j.daily.precipitation_probability_max ? j.daily.precipitation_probability_max[i] : null;
+        html += '<div class="wx-day"><b>' + JOURS[dd.getDay()].slice(0, 3) + '</b><span class="ic">' + dw[0] + "</span>" +
+          Math.round(j.daily.temperature_2m_max[i]) + '° <span class="lo">' + Math.round(j.daily.temperature_2m_min[i]) + "°</span>" +
+          (pp != null ? '<div class="lo">' + pp + " %</div>" : "") + "</div>";
+      }
+      $("wxDays").innerHTML = html;
+      var uv = j.daily.uv_index_max ? j.daily.uv_index_max[0] : null;
+      if (uv != null) { var u = uvLevel(uv); $("uvVal").textContent = Math.round(uv); $("uvVal").style.background = css(u[1]); $("uvTxt").textContent = u[0]; }
+      var rise = new Date(j.daily.sunrise[0]), set = new Date(j.daily.sunset[0]);
+      sun = { rise: rise, set: set };
+      $("sunrise").textContent = "Lever " + hm(rise);
+      $("sunset").textContent = "Coucher " + hm(set);
+      var len = Math.round((set - rise) / 60000);
+      $("daylen").textContent = Math.floor(len / 60) + " h " + pad(len % 60) + " de clarté";
+      var now = new Date();
+      $("wxUpdated").textContent = "à " + pad(now.getHours()) + ":" + pad(now.getMinutes());
+      tick();
+    }).catch(function () {
+      $("wxDesc").textContent = "Météo indisponible : vérifiez le Wi-Fi. Nouvel essai dans 5 min.";
+      setTimeout(loadWeather, 5 * 60000);
+    });
+
+    fetch("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + settings.lat + "&longitude=" + settings.lon + "&current=us_aqi,pm2_5&timezone=auto")
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
+        var v = j.current.us_aqi; if (v == null) throw new Error("vide");
+        var a = aqiLevel(v);
+        $("aqiVal").textContent = Math.round(v); $("aqiVal").style.background = css(a[1]);
+        $("aqiTxt").textContent = a[0];
+      }).catch(function () { $("aqiTxt").textContent = "indisponible"; });
+  }
+
+  // ---------- Collectes ----------
+  // Horaire de la maison : ordures 1 fois par mois (3e vendredi), recyclage et compost aux 2 semaines.
+  var DEFAULT_BINS = [
+    { name: "Ordures", day: 5, freq: "month", ref: "2026-11-20" },
+    { name: "Recyclage", day: 5, freq: "2w", ref: "2026-11-13" },
+    { name: "Compost", day: 3, freq: "2w", ref: "2026-11-18" }
+  ];
+  var bins = load("ecran.bins2", null);
+  if (!bins) bins = DEFAULT_BINS.map(function (b) { return JSON.parse(JSON.stringify(b)); });
+  function parseDay(s) { var p = (s || "").split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function toISO(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  var RANGS = ["1er", "2e", "3e", "4e", "5e"];
+
+  function binColor(name) {
+    var n = name.toLowerCase();
+    if (/recycl/.test(n)) return "#5aa9ff";
+    if (/compost|organi|brun|alimentaire/.test(n)) return "#b98b5a";
+    if (/vert|feuille|jardin/.test(n)) return "#7fd1a7";
+    if (/encombr|monstre|gros/.test(n)) return "#c39bff";
+    if (/ordure|déchet|poubelle/.test(n)) return "#9aa5b1";
+    return "#f4b860";
+  }
+  function nextDate(b, from) {
+    var ref = (b.freq === "2w" || b.freq === "4w" || b.freq === "month") ? parseDay(b.ref) : null;
+    var wd = ref ? ref.getDay() : b.day;
+    for (var i = 0; i < 45; i++) {
+      var d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i);
+      if (d.getDay() !== wd) continue;
+      if (b.freq === "w" || (b.freq === "even" && isoWeek(d) % 2 === 0) || (b.freq === "odd" && isoWeek(d) % 2 === 1)) return { date: d, days: i };
+      if (b.freq === "2w" && Math.round((d - ref) / 86400000) % 14 === 0) return { date: d, days: i };
+      if (b.freq === "4w" && Math.round((d - ref) / 86400000) % 28 === 0) return { date: d, days: i };
+      if (b.freq === "month" && Math.ceil(d.getDate() / 7) === Math.ceil(ref.getDate() / 7)) return { date: d, days: i };
+    }
+    return null;
+  }
+  var MOIS_C = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+  function shortDate(d) { return JOURS[d.getDay()].slice(0, 3) + ". " + d.getDate() + " " + MOIS_C[d.getMonth()]; }
+
+  function drawBins() {
+    var now = new Date();
+    var list = bins.map(function (b) { return { b: b, n: nextDate(b, now) }; }).filter(function (x) { return x.n; });
+    list.sort(function (a, c) { return a.n.days - c.n.days; });
+    var box = $("bins"); box.innerHTML = "";
+    if (!list.length) box.innerHTML = '<p class="example">Aucune collecte. Touchez « Modifier » pour en ajouter.</p>';
+    list.forEach(function (x) {
+      var el = document.createElement("div"); el.className = "bin";
+      var when, sub;
+      if (x.n.days === 0) { when = "Aujourd'hui"; sub = now.getHours() < 12 ? "Le bac doit être sorti" : "Pensez à rentrer le bac"; el.className += " soon"; }
+      else if (x.n.days === 1) { when = "Demain"; sub = "Sortir le bac ce soir"; el.className += " soon"; }
+      else { when = shortDate(x.n.date); sub = "Dans " + x.n.days + " jours"; }
+      if (x.b.freq === "month" && x.n.days > 1) sub += " · 1 fois par mois";
+      el.innerHTML = '<div class="name"><span class="sw"></span><span></span></div><div class="when"></div><div class="sub"></div>';
+      el.querySelector(".sw").style.background = binColor(x.b.name);
+      el.querySelector(".name span:last-child").textContent = x.b.name;
+      el.querySelector(".when").textContent = when;
+      el.querySelector(".sub").textContent = sub;
+      box.appendChild(el);
+    });
+    var ex = bins.filter(function (b) { return b.ex; }).map(function (b) { return b.name; });
+    $("binsExample").hidden = !ex.length;
+    if (ex.length) $("binsExample").textContent = ex.join(" et ") + " : horaire d'exemple. Touchez « Modifier » pour entrer le vôtre.";
+  }
+
+  function saveBins() { save("ecran.bins2", bins); drawBins(); drawBinEdit(); }
+  function drawBinEdit() {
+    var box = $("binEdit"); box.innerHTML = "";
+    bins.forEach(function (b, i) {
+      var row = document.createElement("div"); row.className = "bin-edit";
+      var name = document.createElement("input"); name.type = "text"; name.value = b.name; name.id = "binName" + i; name.setAttribute("aria-label", "Type de collecte");
+      name.onchange = function () { b.name = name.value.trim() || "Collecte"; b.ex = false; saveBins(); };
+      var dated = b.freq === "2w" || b.freq === "4w" || b.freq === "month";
+      var day;
+      if (dated) {
+        day = document.createElement("input"); day.type = "date"; day.id = "binRef" + i; day.value = b.ref || toISO(new Date());
+        day.setAttribute("aria-label", "Une date de collecte connue");
+        day.style.cssText = "background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px;min-width:0";
+        day.onchange = function () { if (day.value) { b.ref = day.value; b.day = parseDay(day.value).getDay(); b.ex = false; saveBins(); } };
+      } else {
+        day = document.createElement("select"); day.id = "binDay" + i; day.setAttribute("aria-label", "Jour");
+        [1, 2, 3, 4, 5, 6, 0].forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = JOURS[k]; if (k === b.day) o.selected = true; day.appendChild(o); });
+        day.onchange = function () { b.day = parseInt(day.value, 10); b.ex = false; saveBins(); };
+      }
+      var fr = document.createElement("select"); fr.id = "binFreq" + i; fr.setAttribute("aria-label", "Fréquence");
+      [["w", "Chaque semaine"], ["2w", "Aux 2 semaines"], ["4w", "Aux 4 semaines"], ["month", "1 fois par mois"]].concat(b.freq === "even" || b.freq === "odd" ? [[b.freq, b.freq === "even" ? "Aux 2 sem. (paires)" : "Aux 2 sem. (impaires)"]] : []).forEach(function (f) {
+        var o = document.createElement("option"); o.value = f[0]; o.textContent = f[1]; if (f[0] === b.freq) o.selected = true; fr.appendChild(o);
+      });
+      fr.onchange = function () {
+        b.freq = fr.value; b.ex = false;
+        if ((b.freq === "2w" || b.freq === "4w" || b.freq === "month") && !b.ref) { var n0 = nextDate({ day: b.day, freq: "w" }, new Date()); b.ref = toISO(n0 ? n0.date : new Date()); }
+        saveBins();
+      };
+      var del = document.createElement("button"); del.type = "button"; del.textContent = "Retirer";
+      del.onclick = function () { bins.splice(i, 1); saveBins(); };
+      var nx = nextDate(b, new Date());
+      var info = document.createElement("div"); info.className = "next";
+      var rule = "";
+      if (b.freq === "month" && b.ref) { var r = parseDay(b.ref); rule = "Le " + RANGS[Math.ceil(r.getDate() / 7) - 1] + " " + JOURS[r.getDay()] + " de chaque mois · "; }
+      if (b.freq === "2w") rule = "Toutes les 2 semaines à partir de la date choisie · ";
+      if (b.freq === "4w") rule = "Toutes les 4 semaines à partir de la date choisie · ";
+      info.textContent = nx ? rule + "Prochaine collecte : " + JOURS[nx.date.getDay()] + " " + nx.date.getDate() + " " + MOIS[nx.date.getMonth()] : "";
+      row.appendChild(name); row.appendChild(day); row.appendChild(fr); row.appendChild(del); row.appendChild(info);
+      box.appendChild(row);
+    });
+  }
+  $("addBin").addEventListener("click", function () { bins.push({ name: "Résidus verts", day: 1, freq: "w" }); saveBins(); });
+
+  // ---------- Minuteur ----------
+  var duration = 25 * 60, remaining = duration, endAt = 0, running = false, audioCtx = null, alarmLoop = null;
+  function fmt(s) { return pad(Math.floor(s / 60)) + ":" + pad(s % 60); }
+  function drawTimer() {
+    $("timerDisplay").textContent = fmt(Math.max(0, Math.ceil(remaining)));
+    $("timerDisplay").classList.toggle("run", running);
+    $("timerStart").textContent = running ? "Pause" : (remaining < duration ? "Reprendre" : "Démarrer");
+  }
+  function beep() {
+    if (!audioCtx) return;
+    var t = audioCtx.currentTime;
+    for (var i = 0; i < 3; i++) {
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = 880; o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.0001, t + i * 0.5);
+      g.gain.exponentialRampToValueAtTime(0.4, t + i * 0.5 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.5 + 0.35);
+      o.start(t + i * 0.5); o.stop(t + i * 0.5 + 0.4);
+    }
+  }
+  function timerLoop() {
+    if (!running) return;
+    remaining = (endAt - Date.now()) / 1000;
+    if (remaining <= 0) {
+      running = false; remaining = 0; drawTimer();
+      wakeUntil = Date.now() + 120000; tick();
+      $("flash").hidden = false; beep(); alarmLoop = setInterval(beep, 3000);
+      return;
+    }
+    drawTimer(); setTimeout(timerLoop, 250);
+  }
+  $("timerStart").addEventListener("click", function () {
+    try { var AC = window.AudioContext || window.webkitAudioContext; if (!audioCtx && AC) audioCtx = new AC(); if (audioCtx && audioCtx.state === "suspended") audioCtx.resume(); } catch (e) {}
+    if (running) { running = false; remaining = (endAt - Date.now()) / 1000; drawTimer(); return; }
+    if (remaining <= 0) remaining = duration;
+    endAt = Date.now() + remaining * 1000; running = true; drawTimer(); timerLoop();
+  });
+  $("timerReset").addEventListener("click", function () { running = false; remaining = duration; drawTimer(); });
+  $("presets").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var btns = this.querySelectorAll("button");
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove("on");
+    b.classList.add("on");
+    duration = parseInt(b.getAttribute("data-min"), 10) * 60;
+    $("timerLabel").textContent = b.getAttribute("data-min") + " min";
+    running = false; remaining = duration; drawTimer();
+  });
+  $("flashOk").addEventListener("click", function () { $("flash").hidden = true; clearInterval(alarmLoop); remaining = duration; drawTimer(); });
+
+  // ---------- Radio ----------
+  var STW = "https://playerservices.streamtheworld.com/api/livestream-redirect/";
+  var stations = load("ecran.stations", null) || [
+    { name: "ICI Musique", url: STW + "CBFXFM_SRC.mp3" },
+    { name: "ICI Première", url: STW + "CBFFM_SRC.mp3" },
+    { name: "ICI Classique", url: STW + "ICI_MusiqueClassique_SRC.mp3" },
+    { name: "98.5", url: STW + "CHMPFMAAC.aac" },
+    { name: "CKOI 96.9", url: STW + "CKOIFMAAC_SC.aac" },
+    { name: "Rouge 107.3", url: STW + "CITEFMAAC.aac" },
+    { name: "Rythme 105.7", url: STW + "CFGLFMAAC.aac" },
+    { name: "Énergie 94.3", url: STW + "CKMFFMAAC.aac" }
+  ];
+  var player = $("player"), current = -1;
+  function saveStations() { save("ecran.stations", stations); drawStations(); drawRadioEdit(); }
+  function drawStations() {
+    var box = $("stations"); box.innerHTML = "";
+    stations.forEach(function (s, i) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "station" + (i === current ? " on" : "");
+      b.textContent = s.name;
+      b.onclick = function () { if (i === current) stopRadio(); else playStation(i); };
+      box.appendChild(b);
+    });
+  }
+  function playStation(i) {
+    current = i; drawStations();
+    var btn = $("stations").children[i]; if (btn) btn.classList.add("wait");
+    $("radioStatus").textContent = "Connexion à " + stations[i].name + "…";
+    $("radioStop").hidden = false;
+    player.src = stations[i].url;
+    var p = player.play();
+    if (p && p.catch) p.catch(function () { $("radioStatus").textContent = stations[i].name + " ne répond pas. Essayez une autre station."; current = -1; drawStations(); });
+  }
+  function stopRadio() {
+    player.pause(); player.removeAttribute("src"); player.load();
+    current = -1; drawStations();
+    $("radioStatus").textContent = "Touchez une station pour l'écouter."; $("radioStop").hidden = true;
+  }
+  player.addEventListener("playing", function () {
+    if (current < 0) return;
+    drawStations(); $("radioStatus").textContent = "En écoute : " + stations[current].name + (onSpeakers ? " · sur les haut-parleurs" : "");
+  });
+  player.addEventListener("waiting", function () { if (current >= 0) $("radioStatus").textContent = "Mise en mémoire…"; });
+  player.addEventListener("error", function () {
+    if (current < 0) return;
+    $("radioStatus").textContent = stations[current].name + " ne répond pas. Essayez une autre station.";
+    current = -1; drawStations();
+  });
+  $("radioStop").addEventListener("click", stopRadio);
+
+  // AirPlay : envoyer la radio vers les enceintes Sonos (Salon, Bureau…)
+  var onSpeakers = false;
+  if (window.WebKitPlaybackTargetAvailabilityEvent) {
+    player.addEventListener("webkitplaybacktargetavailabilitychanged", function (e) {
+      $("radioAirplay").hidden = e.availability !== "available";
+    });
+    player.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", function () {
+      onSpeakers = !!player.webkitCurrentPlaybackTargetIsWireless;
+      $("radioAirplay").textContent = onSpeakers ? "Sur AirPlay ✓" : "Haut-parleurs";
+      if (current >= 0) $("radioStatus").textContent = "En écoute : " + stations[current].name + (onSpeakers ? " · sur les haut-parleurs" : "");
+    });
+    $("radioAirplay").addEventListener("click", function () { player.webkitShowPlaybackTargetPicker(); });
+  }
+
+  function drawRadioEdit() {
+    var ul = $("radioEdit"); ul.innerHTML = "";
+    stations.forEach(function (s, i) {
+      var li = document.createElement("li");
+      var t = document.createElement("span"); t.textContent = s.name;
+      var up = document.createElement("button"); up.type = "button"; up.textContent = "↑"; up.setAttribute("aria-label", "Monter");
+      up.onclick = function () { if (i > 0) { stations.splice(i - 1, 0, stations.splice(i, 1)[0]); if (current >= 0) stopRadio(); saveStations(); } };
+      var x = document.createElement("button"); x.type = "button"; x.textContent = "Retirer";
+      x.onclick = function () { if (i === current) stopRadio(); else if (current > i) current--; stations.splice(i, 1); saveStations(); };
+      li.appendChild(t); li.appendChild(up); li.appendChild(x); ul.appendChild(li);
+    });
+  }
+  $("radioSearch").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var q = $("radioInput").value.trim(); if (!q) return;
+    var box = $("radioResults"); box.innerHTML = '<p class="hint">Recherche…</p>';
+    fetch("https://all.api.radio-browser.info/json/stations/search?limit=8&hidebroken=true&order=clickcount&reverse=true&name=" + encodeURIComponent(q))
+      .then(function (r) { return r.json(); }).then(function (list) {
+        box.innerHTML = "";
+        list = list.filter(function (s) { return /^https:/.test(s.url_resolved || ""); });
+        if (!list.length) { box.innerHTML = '<p class="hint">Aucune station trouvée. Essayez un autre nom ou la fréquence (ex. : 102.9).</p>'; return; }
+        list.forEach(function (s) {
+          var b = document.createElement("button"); b.type = "button";
+          b.textContent = s.name.trim() + (s.state ? " · " + s.state : "") + (s.countrycode ? " (" + s.countrycode + ")" : "");
+          b.onclick = function () {
+            stations.push({ name: s.name.trim().slice(0, 22), url: s.url_resolved });
+            saveStations(); box.innerHTML = '<p class="hint">Ajoutée : ' + s.name.trim().replace(/[<>&]/g, "") + "</p>"; $("radioInput").value = "";
+          };
+          box.appendChild(b);
+        });
+      }).catch(function () { box.innerHTML = '<p class="hint">Recherche impossible : vérifiez le Wi-Fi.</p>'; });
+  });
+
+  // ---------- Réglages ----------
+  function openSettings() { $("nightToggle").checked = settings.night; drawBinEdit(); drawRadioEdit(); $("sheet").hidden = false; }
+  $("openSettings").addEventListener("click", openSettings);
+  $("editBins").addEventListener("click", openSettings);
+  $("editRadio").addEventListener("click", function () { openSettings(); $("radioSection").scrollIntoView(); });
+  $("closeSettings").addEventListener("click", function () { $("sheet").hidden = true; });
+  $("nightToggle").addEventListener("change", function () { settings.night = this.checked; save("ecran.settings", settings); tick(); });
+  $("citySearch").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var q = $("cityInput").value.trim(); if (!q) return;
+    $("cityResults").innerHTML = '<p class="hint">Recherche…</p>';
+    fetch("https://geocoding-api.open-meteo.com/v1/search?count=5&language=fr&name=" + encodeURIComponent(q))
+      .then(function (r) { return r.json(); }).then(function (j) {
+        var box = $("cityResults"); box.innerHTML = "";
+        if (!j.results || !j.results.length) { box.innerHTML = '<p class="hint">Aucune ville trouvée. Essayez un autre nom.</p>'; return; }
+        j.results.forEach(function (r) {
+          var b = document.createElement("button"); b.type = "button";
+          b.textContent = r.name + (r.admin1 ? ", " + r.admin1 : "") + (r.country ? " (" + r.country + ")" : "");
+          b.onclick = function () {
+            settings.city = r.name; settings.lat = r.latitude; settings.lon = r.longitude;
+            save("ecran.settings", settings); box.innerHTML = ""; $("cityInput").value = "";
+            $("sheet").hidden = true; loadWeather();
+          };
+          box.appendChild(b);
+        });
+      }).catch(function () { $("cityResults").innerHTML = '<p class="hint">Recherche impossible : vérifiez le Wi-Fi.</p>'; });
+  });
+
+  // ---------- Démarrage ----------
+  tick(); setInterval(tick, 1000);
+  drawTimer(); drawBins(); drawStations(); loadWeather();
+  setInterval(loadWeather, 15 * 60000);
+})();
+</script>
+</body>
+</html>
